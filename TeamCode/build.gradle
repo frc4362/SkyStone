@@ -13,3 +13,8 @@
 
 // Include common definitions from above.
 apply from: '../build.common.gradle'
+
+dependencies {
+    implementation 'gov.nist.math:jama:1.0.3'
+    implementation 'com.acmerobotics.roadrunner:core:0.4.5'
+}

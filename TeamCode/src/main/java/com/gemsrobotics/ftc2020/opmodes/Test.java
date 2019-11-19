@@ -1,0 +1,34 @@
+package com.gemsrobotics.ftc2020.opmodes;
+
+import com.acmerobotics.roadrunner.geometry.Pose2d;
+import com.acmerobotics.roadrunner.trajectory.Trajectory;
+import com.gemsrobotics.ftc2020.hardware.MecanumChassis;
+import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+
+@Autonomous
+public class Test extends LinearOpMode {
+	public static double DISTANCE = 30;
+
+	@Override
+	public void runOpMode() {
+		MecanumChassis drive = new MecanumChassis(hardwareMap);
+
+		Trajectory trajectory = drive.getTrajectoryBuilder()
+				.splineTo(new Pose2d(30, -30, -90))
+				.build();
+
+		waitForStart();
+
+		if (isStopRequested()) return;
+
+		drive.setTrajectoryGoal(trajectory);
+
+		while (!isStopRequested() && drive.isBusy()) {
+			drive.update();
+			telemetry.addData("Pose Estimate", drive.getPoseEstimate());
+		}
+
+		drive.setDisabled();
+	}
+}
