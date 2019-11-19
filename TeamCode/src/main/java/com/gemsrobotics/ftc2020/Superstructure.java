@@ -101,7 +101,7 @@ public class Superstructure {
 	}
 
 	public void update() {
-		if (m_newGoal != null) {
+		if (m_newGoal != null && m_newGoal != m_state) {
 			handleGoalTransition(m_newGoal);
 			m_newGoal = null;
 		}
@@ -187,7 +187,6 @@ public class Superstructure {
 		public boolean execute() {
 			intake.setGoal(Intake.Goal.NEUTRAL);
 			draggers.setGoal(Draggers.Goal.RETRACTED);
-			m_telemetry.addLine("Set from Superstructure:191");
 			gripper.setPosition(GRIPPER_CLOSED_POSITION);
 			parker.setPosition(PARKER_RETRACTED_POSITION);
 			flipper.setPosition(FLIPPER_UPRIGHT_POSITION);
@@ -252,7 +251,6 @@ public class Superstructure {
 		public boolean execute() {
 			draggers.setGoal(Draggers.Goal.RETRACTED);
 			passthrough.setPosition(PASSTHROUGH_FORWARD_POSITION);
-			m_telemetry.addLine("Set from Superstructure:254");
 			gripper.setPosition(GRIPPER_OPEN_POSITION);
 			parker.setPosition(PARKER_RETRACTED_POSITION);
 
@@ -286,7 +284,6 @@ public class Superstructure {
 				return false;
 			}
 
-			m_telemetry.addLine("Set from Superstructure:288");
 			gripper.setPosition(GRIPPER_CLOSED_POSITION);
 			return true;
 		}
@@ -297,7 +294,6 @@ public class Superstructure {
 		public boolean execute() {
 			draggers.setGoal(Draggers.Goal.RETRACTED);
 			passthrough.setPosition(PASSTHROUGH_FORWARD_POSITION);
-			m_telemetry.addLine("Set from Superstructure:299");
 			gripper.setPosition(GRIPPER_CLOSED_POSITION);
 			parker.setPosition(PARKER_RETRACTED_POSITION);
 
@@ -328,7 +324,6 @@ public class Superstructure {
 		public boolean execute() {
 			draggers.setGoal(Draggers.Goal.RETRACTED);
 			passthrough.setPosition(PASSTHROUGH_FORWARD_POSITION);
-			m_telemetry.addLine("Set from Superstructure:330");
 			gripper.setPosition(GRIPPER_OPEN_POSITION);
 			parker.setPosition(PARKER_RETRACTED_POSITION);
 

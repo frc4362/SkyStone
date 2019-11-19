@@ -7,18 +7,28 @@ import static java.lang.StrictMath.abs;
 
 @TeleOp(name="TeleOp Mode")
 public final class TeleOpMode extends BaseOpMode {
-	private boolean wasScrubbingLast = false;
-	private boolean wasIncrementingLast = false;
-	private boolean wantedStowLast = false;
-	private boolean wantedIntakeLast = false;
-	private boolean wantedDropLast = false;
+	private boolean
+			wasScrubbingLast,
+			wasIncrementingLast,
+			wantedStowLast,
+			wantedIntakeLast,
+			wantedDropLast;
 
+	@Override
+	public void startup() {
+		wasScrubbingLast = false;
+		wasIncrementingLast = false;
+		wantedStowLast = false;
+		wantedIntakeLast = false;
+		wantedDropLast = false;
+	}
+	
 	@Override
 	public void update() {
 		final boolean wantsStow = gamepad2.dpad_down;
 		final double scrubbingPower = gamepad2.right_trigger - gamepad2.left_trigger;
-		final boolean isScrubbing = abs(scrubbingPower) > 0.12;
-		final boolean isIncrementing = gamepad2.right_bumper;
+		final boolean wantsScrub = abs(scrubbingPower) > 0.08;
+		final boolean wantsElevatorIncrement = gamepad2.right_bumper;
 		final boolean wantsIntake = gamepad2.a;
 		final boolean wantsDrop = gamepad2.y;
 
@@ -36,19 +46,17 @@ public final class TeleOpMode extends BaseOpMode {
 				|| (superstructure.getState() == Superstructure.Goal.PARKING
 					&& superstructure.passthrough.getPosition() == Superstructure.PASSTHROUGH_REVERSE_POSITION)
 		) {
-			if (isScrubbing) {
+			if (wantsScrub) {
 				superstructure.elevator.setOpenLoopGoal(scrubbingPower * 0.6);
 			} else if (wasScrubbingLast) {
 				superstructure.elevator.setHoldPositionGoal();
-			} else if (isIncrementing && !wasIncrementingLast) {
+			} else if (wantsElevatorIncrement && !wasIncrementingLast) {
 				superstructure.elevator.incrementPosition();
 			}
 
 			if (wantsDrop && !wantedDropLast) {
-				telemetry.addLine("Set from TeleOpMode:48");
 				superstructure.gripper.setPosition(Superstructure.GRIPPER_CLOSED_POSITION);
 			} else if (wantedDropLast) {
-				telemetry.addLine("Set from TeleOpMode:51");
 				superstructure.gripper.setPosition(Superstructure.GRIPPER_OPEN_POSITION);
 			}
 		} else if (!superstructure.isBusy() && superstructure.getState() != Superstructure.Goal.PARKING) {
@@ -69,18 +77,12 @@ public final class TeleOpMode extends BaseOpMode {
 			}
 		}
 
-		telemetry.addData("Wants Drop", wantsDrop);
-		telemetry.addData("Wants Drop Last", wantedDropLast);
-		telemetry.addData("Wants Stow", wantsStow);
-		telemetry.addData("Gripper Reference", superstructure.gripper.getPosition());
 		telemetry.addData("Requests", superstructure.getRequestSummary());
 		telemetry.addData("Superstructure Goal", superstructure.getState());
 		telemetry.addData("Pose Estimate", superstructure.chassis.getPoseEstimate());
-		telemetry.addData("Left Microswitch", superstructure.inventory.isCubeTiltedLeft());
-		telemetry.addData("Right Microswitch", superstructure.inventory.isCubeTiltedRight());
 
-		wasScrubbingLast = isScrubbing;
-		wasIncrementingLast = isIncrementing;
+		wasScrubbingLast = wantsScrub;
+		wasIncrementingLast = wantsElevatorIncrement;
 		wantedStowLast = wantsStow;
 		wantedIntakeLast = wantsIntake;
 		wantedDropLast = wantsDrop;
