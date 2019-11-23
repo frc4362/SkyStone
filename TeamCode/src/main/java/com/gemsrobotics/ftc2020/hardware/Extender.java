@@ -66,9 +66,9 @@ public class Extender implements Subsystem {
 
 	public enum Position {
 		STOWED(0.0),
-		GRABBING(0.10),
-		STOPPED(0.465),
-		SCORING(0.95);
+		GRABBING(0.13),
+		STOPPED(0.45),
+		SCORING(1.00);
 
 		private final double percent;
 

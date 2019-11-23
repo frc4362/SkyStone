@@ -79,6 +79,8 @@ public final class TeleOpMode extends BaseOpMode {
 			}
 		}
 
+		telemetry.addData("Extender Position", superstructure.extender.getCurrentPercent());
+		telemetry.addData("Extender Power", superstructure.extender.getOutput());
 		telemetry.addData("Requests", superstructure.getRequestSummary());
 		telemetry.addData("Superstructure Goal", superstructure.getState());
 		telemetry.addData("Pose Estimate", superstructure.chassis.getPoseEstimate());

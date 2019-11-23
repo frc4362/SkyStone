@@ -88,10 +88,11 @@ public class Superstructure {
 		INTAKING,
 		SCORING,
 		OUTTAKING,
-		PARKING
+		PARKING,
+		GRABBED
 	}
 
-	public void request(final Request request) {
+	private void request(final Request request) {
 		m_requests.add(request);
 	}
 
@@ -101,6 +102,7 @@ public class Superstructure {
 	}
 
 	public void update() {
+		//  && !(m_state == Goal.GRABBED && m_newGoal == Goal.STOWED)
 		if (m_newGoal != null && m_newGoal != m_state) {
 			handleGoalTransition(m_newGoal);
 			m_newGoal = null;
@@ -141,10 +143,10 @@ public class Superstructure {
 	private void handleGoalTransition(final Goal newGoal) {
 		switch (newGoal) {
 			case STOWED:
-				request(new StowRequest());
+				request(new StowRequest(m_state != Goal.GRABBED));
 				break;
 			case DRAGGING:
-				request(new StowRequest());
+				request(new StowRequest(true));
 				request(new DragRequest());
 				break;
 			case SCORING:
@@ -154,7 +156,7 @@ public class Superstructure {
 				request(new IntakingRequest());
 				break;
 			case OUTTAKING:
-				request(new StowRequest());
+				request(new StowRequest(true));
 				request(new OuttakingRequest());
 				break;
 			case PARKING:
@@ -183,6 +185,12 @@ public class Superstructure {
 	}
 
 	private class StowRequest extends Request {
+		private boolean moveExtender;
+
+		public StowRequest(final boolean moveExtender) {
+			this.moveExtender = moveExtender;
+		}
+
 		@Override
 		public boolean execute() {
 			intake.setGoal(Intake.Goal.NEUTRAL);
@@ -198,7 +206,7 @@ public class Superstructure {
 
 			passthrough.setPosition(PASSTHROUGH_FORWARD_POSITION);
 
-			if (extender.getCurrentPercent() > 0.05) {
+			if (extender.getCurrentPercent() > 0.05 && moveExtender) {
 				extender.setPositionGoal(Extender.Position.STOWED);
 				return false;
 			}
@@ -230,7 +238,7 @@ public class Superstructure {
 			parker.setPosition(PARKER_RETRACTED_POSITION);
 			flipper.setPosition(FLIPPER_UPRIGHT_POSITION);
 
-			if (extender.getCurrentPercent() < 0.85) {
+			if (extender.getCurrentPercent() < 0.97) {
 				extender.setPositionGoal(Extender.Position.SCORING);
 				return false;
 			}
@@ -285,6 +293,7 @@ public class Superstructure {
 			}
 
 			gripper.setPosition(GRIPPER_CLOSED_POSITION);
+			m_state = Goal.GRABBED;
 			return true;
 		}
 	}

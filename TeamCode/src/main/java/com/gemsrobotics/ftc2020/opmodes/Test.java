@@ -18,10 +18,10 @@ public class Test extends LinearOpMode {
 		final Chassis drive = new Chassis(hardwareMap);
 
 		Trajectory trajectory = drive.getTrajectoryBuilder()
-				.splineTo(new Pose2d(70 * 1.6, -30 * 1.28, 0))
-//				.splineTo(new Pose2d(80, -30, 0))
-//				.splineTo(new Pose2d(70, 0, Tau / 2))
-//				.forward(55)
+				.splineTo(new Pose2d(70 * 1.6, 0, 0))
+				.splineTo(new Pose2d(85 * 1.6, -15 * 1.28, -Tau / 4))
+				.splineTo(new Pose2d(70 * 1.6, -30 * 1.28, -Tau / 2))
+				.splineTo(new Pose2d(20 * 1.6, -15 * 1.28, -Tau / 2))
 				.build();
 
 		waitForStart();
