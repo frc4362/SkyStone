@@ -134,7 +134,7 @@ public class Elevator implements Subsystem {
 
 		switch (m_mode) {
 			case DISABLED:
-				m_motor.setPower(0.0);
+				m_output = 0.0;
 				break;
 			case OPEN_LOOP:
 				m_output = m_goal;

@@ -12,7 +12,7 @@ public final class TeleOpMode extends BaseOpMode {
 			wasIncrementingLast,
 			wantedStowLast,
 			wantedIntakeLast,
-			wantedDropLast;
+			wantedDropCubeLast;
 
 	@Override
 	public void startup() {
@@ -20,7 +20,7 @@ public final class TeleOpMode extends BaseOpMode {
 		wasIncrementingLast = false;
 		wantedStowLast = false;
 		wantedIntakeLast = false;
-		wantedDropLast = false;
+		wantedDropCubeLast = false;
 	}
 	
 	@Override
@@ -30,7 +30,7 @@ public final class TeleOpMode extends BaseOpMode {
 		final boolean wantsScrub = abs(scrubbingPower) > 0.08;
 		final boolean wantsElevatorIncrement = gamepad2.right_bumper;
 		final boolean wantsIntake = gamepad2.a;
-		final boolean wantsDrop = gamepad2.y;
+		final boolean wantsDropCube = gamepad2.y;
 
 		superstructure.chassis.setOpenLoopPolar(
 				-gamepad1.left_stick_y,
@@ -46,6 +46,7 @@ public final class TeleOpMode extends BaseOpMode {
 				|| (superstructure.getState() == Superstructure.Goal.PARKING
 					&& superstructure.passthrough.getPosition() == Superstructure.PASSTHROUGH_REVERSE_POSITION)
 		) {
+			// SCORING LOGIC
 			if (wantsScrub) {
 				superstructure.elevator.setOpenLoopGoal(scrubbingPower * 0.6);
 			} else if (wasScrubbingLast) {
@@ -54,9 +55,10 @@ public final class TeleOpMode extends BaseOpMode {
 				superstructure.elevator.incrementPosition();
 			}
 
-			if (wantsDrop && !wantedDropLast) {
+			// TODO check phase
+			if (wantsDropCube && !wantedDropCubeLast) {
 				superstructure.gripper.setPosition(Superstructure.GRIPPER_CLOSED_POSITION);
-			} else if (wantedDropLast) {
+			} else if (wantedDropCubeLast) {
 				superstructure.gripper.setPosition(Superstructure.GRIPPER_OPEN_POSITION);
 			}
 		} else if (!superstructure.isBusy() && superstructure.getState() != Superstructure.Goal.PARKING) {
@@ -85,6 +87,6 @@ public final class TeleOpMode extends BaseOpMode {
 		wasIncrementingLast = wantsElevatorIncrement;
 		wantedStowLast = wantsStow;
 		wantedIntakeLast = wantsIntake;
-		wantedDropLast = wantsDrop;
+		wantedDropCubeLast = wantsDropCube;
 	}
 }
