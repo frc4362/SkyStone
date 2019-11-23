@@ -18,13 +18,13 @@ public class Constants {
 			WHEEL_BASE = 13.625;
 
 	public static final double
-			kS = 0.14243,
-			kV = 0.40437,
-			kA = 0.00177;
+			kS = 0.09190,
+			kV = 0.02492,
+			kA = 0.00182;
 
 	public static DriveConstraints TRACKING_CONSTRAINTS = new DriveConstraints(
-			45.0,
-			45.0,
+			25.0,
+			25.0,
 			0.0,
 			Math.toRadians(180.0),
 			Math.toRadians(180.0),

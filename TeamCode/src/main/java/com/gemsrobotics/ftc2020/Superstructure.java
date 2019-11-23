@@ -230,7 +230,7 @@ public class Superstructure {
 			parker.setPosition(PARKER_RETRACTED_POSITION);
 			flipper.setPosition(FLIPPER_UPRIGHT_POSITION);
 
-			if (extender.getCurrentPercent() < 0.75) {
+			if (extender.getCurrentPercent() < 0.85) {
 				extender.setPositionGoal(Extender.Position.SCORING);
 				return false;
 			}

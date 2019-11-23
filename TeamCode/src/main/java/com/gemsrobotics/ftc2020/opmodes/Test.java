@@ -6,6 +6,8 @@ import com.gemsrobotics.ftc2020.hardware.MecanumChassis;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 
+import static com.gemsrobotics.lib.utils.MathUtils.Tau;
+
 @Autonomous
 public class Test extends LinearOpMode {
 	public static double DISTANCE = 30;
@@ -15,7 +17,7 @@ public class Test extends LinearOpMode {
 		MecanumChassis drive = new MecanumChassis(hardwareMap);
 
 		Trajectory trajectory = drive.getTrajectoryBuilder()
-				.splineTo(new Pose2d(30, -30, -90))
+				.splineTo(new Pose2d(30, -30, Tau / 4))
 				.build();
 
 		waitForStart();
