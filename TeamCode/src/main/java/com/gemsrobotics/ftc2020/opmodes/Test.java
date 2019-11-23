@@ -10,8 +10,6 @@ import static com.gemsrobotics.lib.utils.MathUtils.Tau;
 
 @Autonomous
 public class Test extends LinearOpMode {
-	public static double DISTANCE = 30;
-
 	@Override
 	public void runOpMode() {
 		MecanumChassis drive = new MecanumChassis(hardwareMap);
