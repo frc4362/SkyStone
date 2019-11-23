@@ -4,7 +4,7 @@ import com.acmerobotics.roadrunner.geometry.Pose2d;
 import com.acmerobotics.roadrunner.tuning.AccelRegression;
 import com.acmerobotics.roadrunner.tuning.RampRegression;
 import com.acmerobotics.roadrunner.util.NanoClock;
-import com.gemsrobotics.ftc2020.hardware.MecanumChassis;
+import com.gemsrobotics.ftc2020.hardware.Chassis;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 
@@ -20,7 +20,7 @@ public class CharacterizeOpMode extends LinearOpMode {
 
 	@Override
 	public void runOpMode() throws InterruptedException {
-		MecanumChassis drive = new MecanumChassis(hardwareMap);
+		Chassis drive = new Chassis(hardwareMap);
 
 		NanoClock clock = NanoClock.system();
 

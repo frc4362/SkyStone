@@ -8,8 +8,9 @@ import com.acmerobotics.roadrunner.followers.TrajectoryFollower;
 import com.acmerobotics.roadrunner.geometry.Pose2d;
 import com.acmerobotics.roadrunner.localization.Localizer;
 import com.acmerobotics.roadrunner.localization.TwoTrackingWheelLocalizer;
+import com.acmerobotics.roadrunner.profile.MotionProfile;
+import com.acmerobotics.roadrunner.profile.MotionProfileGenerator;
 import com.acmerobotics.roadrunner.profile.MotionState;
-import com.acmerobotics.roadrunner.trajectory.SimpleTrajectoryBuilder;
 import com.acmerobotics.roadrunner.trajectory.Trajectory;
 import com.acmerobotics.roadrunner.trajectory.TrajectoryBuilder;
 import com.acmerobotics.roadrunner.trajectory.constraints.DriveConstraints;
@@ -43,15 +44,16 @@ import static java.lang.Math.sqrt;
 import static java.lang.Math.toDegrees;
 import static java.lang.Math.toRadians;
 
-public final class MecanumChassis extends MecanumDrive implements Subsystem {
+public final class Chassis extends MecanumDrive implements Subsystem {
 	private static final double
 			FAST_ROTATE_SCALAR = 0.7,
 			SLOW_ROTATE_SCALAR = 0.33,
 			DIRECTION_SNAP_THRESHOLD_RADIANS = toRadians(10.0),
 			INPUT_DEADBAND = 0.2;
 	private static final PIDCoefficients
-			TRANSLATION_CONTROLLER = new PIDCoefficients(1.4, 0.0, 3.0),
-			HEADING_CONTROLLER = new PIDCoefficients(0.6, 0.0, 0.0);
+			X_TRANSLATION_CONTROLLER = new PIDCoefficients(1.4, 0.0, 3.0),
+			Y_TRANSLATION_CONTROLLER = new PIDCoefficients(5.1, 0.0, 3.0),
+			HEADING_CONTROLLER = new PIDCoefficients(6.0, 0.0, 0.0);
 
 	private final DcMotorEx
 			m_leftFrontMotor,
@@ -61,16 +63,20 @@ public final class MecanumChassis extends MecanumDrive implements Subsystem {
 	private final List<DcMotorEx> m_motors;
 	private final IMU m_imu;
 	private final PIDFController m_openLoopRotationController;
+	private final com.acmerobotics.roadrunner.control.PIDFController m_turnController;
 	private final Localizer m_localization;
 	private final DriveConstraints m_constraints;
 	private final TrajectoryFollower m_follower;
+
+	private MotionProfile m_turnProfile;
+	private double m_turnStart;
 
 	private ControlMode m_mode;
 	private Goal m_goal;
 	private double m_accumulator;
 	private boolean m_lastDoHeadingLock;
 
-	public MecanumChassis(final HardwareMap hardware) {
+	public Chassis(final HardwareMap hardware) {
 		super(
 			Constants.kV,
 			Constants.kA,
@@ -99,11 +105,16 @@ public final class MecanumChassis extends MecanumDrive implements Subsystem {
 
 		m_imu = new IMU(hardware.get(BNO055IMU.class, "imu"));
 
-		m_openLoopRotationController = new PIDFController(1.0, 0.0, 1.0, 0.0);
+		m_openLoopRotationController = new PIDFController(0.0, 0.0, 1.0, 0.0);
 		m_openLoopRotationController.setContinuous(true);
 		m_openLoopRotationController.setTolerance(1.5);
 		m_openLoopRotationController.setOutputRange(-0.15, +0.15);
 		m_openLoopRotationController.setInputRange(-180.0, +180.0);
+
+		final com.acmerobotics.roadrunner.control.PIDCoefficients HEADING_PID =
+				new com.acmerobotics.roadrunner.control.PIDCoefficients(0.0, 0.0, 0.0);
+		m_turnController = new com.acmerobotics.roadrunner.control.PIDFController(HEADING_PID);
+		m_turnController.setInputBounds(0, Tau);
 
 		m_localization = new MyLocalizer();
 
@@ -112,8 +123,8 @@ public final class MecanumChassis extends MecanumDrive implements Subsystem {
 				Constants.TRACK_WIDTH);
 
 		m_follower = new HolonomicPIDVAFollower(
-				TRANSLATION_CONTROLLER,
-				TRANSLATION_CONTROLLER,
+				X_TRANSLATION_CONTROLLER,
+				Y_TRANSLATION_CONTROLLER,
 				HEADING_CONTROLLER);
 
 		setDisabled();
@@ -131,14 +142,14 @@ public final class MecanumChassis extends MecanumDrive implements Subsystem {
 		@Override
 		public List<Double> getWheelPositions() {
 			final List<Double> ret = new ArrayList<>();
-			ret.add(Constants.localizerEncoderTicksToInches(m_leftFrontMotor.getCurrentPosition()) / 2);
-			ret.add(Constants.localizerEncoderTicksToInches(-m_rightFrontMotor.getCurrentPosition()) / 2);
+			ret.add(Constants.localizerEncoderTicksToInches(m_leftFrontMotor.getCurrentPosition()));
+			ret.add(Constants.localizerEncoderTicksToInches(-m_rightFrontMotor.getCurrentPosition()));
 			return ret;
 		}
 
 		@Override
 		public double getHeading() {
-			return MecanumChassis.this.getExternalHeading();
+			return Chassis.this.getExternalHeading();
 		}
 	}
 
@@ -156,10 +167,6 @@ public final class MecanumChassis extends MecanumDrive implements Subsystem {
 		return new TrajectoryBuilder(getPoseEstimate(), m_constraints);
 	}
 
-	public SimpleTrajectoryBuilder getSimpleTrajectoryBuilder(final MotionState startState) {
-		return new SimpleTrajectoryBuilder(getPoseEstimate(), m_constraints);
-	}
-
 	@Override
 	public void setMotorPowers(double v0, double v1, double v2, double v3) {
 		m_leftFrontMotor.setPower(v0);
@@ -174,7 +181,7 @@ public final class MecanumChassis extends MecanumDrive implements Subsystem {
 	}
 
 	private enum ControlMode {
-		DISABLED, OPEN_LOOP, TRACKING
+		DISABLED, OPEN_LOOP, TURNING, TRACKING
 	}
 
 	private void configureMode(final ControlMode newMode) {
@@ -184,6 +191,7 @@ public final class MecanumChassis extends MecanumDrive implements Subsystem {
 					case DISABLED:
 						motor.setMotorDisable();
 						break;
+					case TURNING:
 					case OPEN_LOOP:
 					case TRACKING:
 						motor.setMotorEnable();
@@ -325,6 +333,19 @@ public final class MecanumChassis extends MecanumDrive implements Subsystem {
 		m_follower.followTrajectory(trajectory);
 	}
 
+	public void setTurnGoal(final double angle) {
+		double heading = getPoseEstimate().getHeading();
+		m_turnProfile = MotionProfileGenerator.generateSimpleMotionProfile(
+				new MotionState(heading, 0, 0, 0),
+				new MotionState(heading + angle, 0, 0, 0),
+				m_constraints.maxAngVel,
+				m_constraints.maxAngAccel,
+				m_constraints.maxAngJerk
+		);
+		m_turnStart = (System.currentTimeMillis() / 1000.0);
+		m_mode = ControlMode.TURNING;
+	}
+
 	public void setDisabled() {
 		configureMode(ControlMode.DISABLED);
 		m_goal = new Goal(Translation.identity(), 0.0, false);
@@ -344,6 +365,27 @@ public final class MecanumChassis extends MecanumDrive implements Subsystem {
 				break;
 			case OPEN_LOOP:
 				updateOpenLoop(m_goal, Rotation.radians(getExternalHeading()));
+				break;
+			case TURNING:
+				double time = (System.currentTimeMillis() / 1000.0) - m_turnStart;
+
+				MotionState targetState = m_turnProfile.get(time);
+
+				m_turnController.setTargetPosition(targetState.getX());
+
+				double targetOmega = targetState.getV();
+				double targetAlpha = targetState.getA();
+				double correction = m_turnController.update(getPoseEstimate().getHeading(), targetOmega);
+
+				setDriveSignal(new DriveSignal(
+						new Pose2d(0, 0, targetOmega + correction),
+						new Pose2d(0, 0, targetAlpha)));
+
+				if (time >= m_turnProfile.duration()) {
+					configureMode(ControlMode.DISABLED);
+					setDriveSignal(new DriveSignal());
+				}
+
 				break;
 			case TRACKING:
 				setDriveSignal(m_follower.update(getPoseEstimate()));

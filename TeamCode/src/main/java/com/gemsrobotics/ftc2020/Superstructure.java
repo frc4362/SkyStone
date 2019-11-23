@@ -7,7 +7,7 @@ import com.gemsrobotics.ftc2020.hardware.Elevator;
 import com.gemsrobotics.ftc2020.hardware.Extender;
 import com.gemsrobotics.ftc2020.hardware.Intake;
 import com.gemsrobotics.ftc2020.hardware.Inventory;
-import com.gemsrobotics.ftc2020.hardware.MecanumChassis;
+import com.gemsrobotics.ftc2020.hardware.Chassis;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.Servo;
 
@@ -36,7 +36,7 @@ public class Superstructure {
 			PARKER_RETRACTED_POSITION = 0.0,
 			PARKER_EXTENDED_POSITION = 1.0;
 
-	public final MecanumChassis chassis;
+	public final Chassis chassis;
 	public final Intake intake;
 	public final Draggers draggers;
 	public final Extender extender;
@@ -55,7 +55,7 @@ public class Superstructure {
 	private Goal m_newGoal, m_state;
 
 	public Superstructure(final HardwareMap hardwareMap, final Telemetry telemetry) {
-		chassis = new MecanumChassis(hardwareMap);
+		chassis = new Chassis(hardwareMap);
 		intake = new Intake(hardwareMap);
 		draggers = new Draggers(hardwareMap);
 		extender = new Extender(hardwareMap);

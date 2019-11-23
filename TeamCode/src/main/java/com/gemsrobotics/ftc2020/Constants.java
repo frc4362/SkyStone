@@ -14,17 +14,17 @@ public class Constants {
 	public static final double
 			WHEEL_RADIUS = 2.0,
 			DRIVE_GEAR_RATIO = 1.5,
-			TRACK_WIDTH = 14.5,
+			TRACK_WIDTH = 29,
 			WHEEL_BASE = 13.625;
 
 	public static final double
-			kS = 0.09190,
-			kV = 0.02492,
-			kA = 0.00182;
+			kS = 0.09824,
+			kV = 0.012,
+			kA = 0.00096;
 
 	public static DriveConstraints TRACKING_CONSTRAINTS = new DriveConstraints(
-			25.0,
-			25.0,
+			40.0,
+			30.0,
 			0.0,
 			Math.toRadians(180.0),
 			Math.toRadians(180.0),
@@ -33,7 +33,7 @@ public class Constants {
 
 	// magic numbeeeeers
 	public static double localizerEncoderTicksToInches(int ticks) {
-		return (1.75 / 2.0) * Tau * 1.0 * (ticks / 2400.0);
+		return Tau * 1.0 * (ticks / 2400.0);
 	}
 
 	public static double driveEncoderTicksToInches(int ticks) {
