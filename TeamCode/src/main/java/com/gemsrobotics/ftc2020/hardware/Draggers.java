@@ -15,7 +15,7 @@ public class Draggers implements Subsystem {
 	}
 
 	public enum Goal {
-		RETRACTED(0.55, 0.0), EXTENDED(0.0, 1.0);
+		EXTENDED(0.55, 0.0), RETRACTED(0.0, 1.0);
 
 		private final double positionFront, positionBack;
 

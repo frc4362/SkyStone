@@ -46,7 +46,7 @@ public final class TeleOpMode extends BaseOpMode {
 				|| (superstructure.getState() == Superstructure.Goal.PARKING
 					&& superstructure.passthrough.getPosition() == Superstructure.PASSTHROUGH_REVERSE_POSITION)
 		) {
-			// SCORING LOGIC
+			// CLEARED LOGIC
 			if (wantsScrub) {
 				superstructure.elevator.setOpenLoopGoal(scrubbingPower * 0.6);
 			} else if (wasScrubbingLast) {

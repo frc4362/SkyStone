@@ -8,6 +8,7 @@ import com.gemsrobotics.ftc2020.hardware.Extender;
 import com.gemsrobotics.ftc2020.hardware.Intake;
 import com.gemsrobotics.ftc2020.hardware.Inventory;
 import com.gemsrobotics.ftc2020.hardware.Chassis;
+import com.gemsrobotics.lib.utils.MathUtils;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.Servo;
 
@@ -19,6 +20,8 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
+
+import static com.gemsrobotics.lib.utils.MathUtils.epsilonEquals;
 
 public class Superstructure {
 	public static final double
@@ -33,8 +36,8 @@ public class Superstructure {
 			GRIPPER_CLOSED_POSITION = 0.0,
 			GRIPPER_OPEN_POSITION = 1.0;
 	public static final double
-			PARKER_RETRACTED_POSITION = 0.0,
-			PARKER_EXTENDED_POSITION = 1.0;
+			PARKER_RETRACTED_POSITION = 1.0,
+			PARKER_EXTENDED_POSITION = 0.0;
 
 	public final Chassis chassis;
 	public final Intake intake;
@@ -195,7 +198,7 @@ public class Superstructure {
 		public boolean execute() {
 			intake.setGoal(Intake.Goal.NEUTRAL);
 			draggers.setGoal(Draggers.Goal.RETRACTED);
-			gripper.setPosition(GRIPPER_CLOSED_POSITION);
+			gripper.setPosition(GRIPPER_OPEN_POSITION);
 			parker.setPosition(PARKER_RETRACTED_POSITION);
 			flipper.setPosition(FLIPPER_UPRIGHT_POSITION);
 
@@ -211,6 +214,7 @@ public class Superstructure {
 				return false;
 			}
 
+			gripper.setPosition(GRIPPER_CLOSED_POSITION);
 			m_state = Goal.STOWED;
 			return true;
 		}
@@ -231,6 +235,9 @@ public class Superstructure {
 	}
 
 	private class ScorePositionRequest extends Request {
+		private boolean hasCleared = false;
+		private long backupTime = Long.MAX_VALUE;
+
 		@Override
 		public boolean execute() {
 			draggers.setGoal(Draggers.Goal.RETRACTED);
@@ -238,13 +245,27 @@ public class Superstructure {
 			parker.setPosition(PARKER_RETRACTED_POSITION);
 			flipper.setPosition(FLIPPER_UPRIGHT_POSITION);
 
-			if (extender.getCurrentPercent() < 0.97) {
-				extender.setPositionGoal(Extender.Position.SCORING);
+			if (extender.getCurrentPercent() < 0.97 && !hasCleared) {
+				extender.setPositionGoal(Extender.Position.CLEARED);
 				return false;
 			}
 
-			passthrough.setPosition(PASSTHROUGH_REVERSE_POSITION);
-			flipper.setPosition(FLIPPER_UPRIGHT_POSITION);
+			hasCleared = true;
+
+			if (backupTime == Long.MAX_VALUE) {
+				backupTime = System.currentTimeMillis() + 500;
+			}
+
+			if (System.currentTimeMillis() < backupTime) {
+				passthrough.setPosition(PASSTHROUGH_REVERSE_POSITION);
+				flipper.setPosition(FLIPPER_UPRIGHT_POSITION);
+				return false;
+			}
+
+			if (extender.getCurrentPercent() > 0.55) {
+				extender.setPositionGoal(Extender.Position.SCORE_CLOSE);
+				return false;
+			}
 
 			m_state = Goal.SCORING;
 			return true;
@@ -315,7 +336,7 @@ public class Superstructure {
 
 			final double currentExtenderPercent = extender.getCurrentPercent();
 
-			if (currentExtenderPercent > 0.5 || currentExtenderPercent < 0.35) {
+			if (epsilonEquals(currentExtenderPercent, Extender.Position.STOPPED.percent, 0.05)) {
 				extender.setPositionGoal(Extender.Position.STOPPED);
 				return false;
 			}
@@ -359,7 +380,7 @@ public class Superstructure {
 		@Override
 		public boolean execute() {
 			if (extender.getCurrentPercent() < 0.85) {
-				extender.setPositionGoal(Extender.Position.SCORING);
+				extender.setPositionGoal(Extender.Position.CLEARED);
 				return false;
 			}
 
