@@ -4,7 +4,7 @@ import com.gemsrobotics.ftc2020.Superstructure;
 import com.gemsrobotics.ftc2020.hardware.Draggers;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 
-public abstract class BaseOpMode extends OpMode {
+public abstract class BaseTeleOpMode extends OpMode {
     protected Superstructure superstructure;
 
     public void initialize() {}

@@ -6,7 +6,7 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import static java.lang.StrictMath.abs;
 
 @TeleOp(name="TeleOp Mode")
-public final class TeleOpMode extends BaseOpMode {
+public final class TeleOpMode extends BaseTeleOpMode {
 	private boolean
 			wasScrubbingLast,
 			wasIncrementingLast,
