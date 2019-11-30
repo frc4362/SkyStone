@@ -38,6 +38,9 @@ public class Superstructure {
 	public static final double
 			PARKER_RETRACTED_POSITION = 1.0,
 			PARKER_EXTENDED_POSITION = 0.0;
+	public static final double
+			CAPPER_INIT_POSITION = 0.0,
+			CAPPER_DROP_POSITION = 1.0;
 
 	public final Chassis chassis;
 	public final Intake intake;
@@ -50,6 +53,7 @@ public class Superstructure {
 	public final Servo flipper;
 	public final Servo gripper;
 	public final Servo parker;
+	public final Servo capper;
 
 	private final Telemetry m_telemetry;
 	private final List<Subsystem> m_subsystems;
@@ -74,6 +78,7 @@ public class Superstructure {
 		gripper.setDirection(Servo.Direction.FORWARD);
 		parker = hardwareMap.get(Servo.class, "ParkExtender");
 		parker.setDirection(Servo.Direction.REVERSE);
+		capper = hardwareMap.get(Servo.class, "CapServo");
 
 		m_subsystems = Arrays.asList(
 				chassis,
@@ -300,7 +305,7 @@ public class Superstructure {
 				return false;
 			}
 
-			if (extender.getCurrentPercent() > 0.15) {
+			if (extender.getCurrentPercent() > 0.25) {
 				extender.setPositionGoal(Extender.Position.GRABBING);
 				return false;
 			}
@@ -325,6 +330,7 @@ public class Superstructure {
 			draggers.setGoal(Draggers.Goal.RETRACTED);
 			passthrough.setPosition(PASSTHROUGH_FORWARD_POSITION);
 			gripper.setPosition(GRIPPER_CLOSED_POSITION);
+//			gripper.setPosition(GRIPPER_OPEN_POSITION);
 			parker.setPosition(PARKER_RETRACTED_POSITION);
 
 			if (elevator.getCurrentPercent() > 0.03) {
@@ -333,6 +339,7 @@ public class Superstructure {
 			}
 
 			extender.setPositionGoal(Extender.Position.STOPPED);
+//			extender.setPositionGoal(Extender.Position.GRABBING);
 
 			final double currentExtenderPercent = extender.getCurrentPercent();
 
@@ -342,6 +349,7 @@ public class Superstructure {
 			}
 
 			flipper.setPosition(FLIPPER_STOP_POSITION);
+//			flipper.setPosition(FLIPPER_UPRIGHT_POSITION);
 			intake.setGoal(Intake.Goal.INTAKING);
 
 			m_state = Goal.INTAKING;

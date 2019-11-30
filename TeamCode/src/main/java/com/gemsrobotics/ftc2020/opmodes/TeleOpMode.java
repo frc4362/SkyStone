@@ -12,7 +12,8 @@ public final class TeleOpMode extends BaseTeleOpMode {
 			wasIncrementingLast,
 			wantedStowLast,
 			wantedIntakeLast,
-			wantedDropCubeLast;
+			wantedDropCubeLast,
+			wantedCapLast;
 
 	@Override
 	public void startup() {
@@ -21,6 +22,7 @@ public final class TeleOpMode extends BaseTeleOpMode {
 		wantedStowLast = false;
 		wantedIntakeLast = false;
 		wantedDropCubeLast = false;
+		wantedCapLast = false;
 	}
 	
 	@Override
@@ -31,6 +33,7 @@ public final class TeleOpMode extends BaseTeleOpMode {
 		final boolean wantsElevatorIncrement = gamepad2.right_bumper;
 		final boolean wantsIntake = gamepad2.a;
 		final boolean wantsDropCube = gamepad2.y;
+		final boolean wantsCap = gamepad2.dpad_left;
 
 		superstructure.chassis.setOpenLoopPolar(
 				-gamepad1.left_stick_y,
@@ -62,6 +65,12 @@ public final class TeleOpMode extends BaseTeleOpMode {
 				superstructure.gripper.setPosition(Superstructure.GRIPPER_OPEN_POSITION);
 			}
 		} else if (!superstructure.isBusy() && superstructure.getState() != Superstructure.Goal.PARKING) {
+			if (wantsCap && !wantedCapLast && superstructure.getState() == Superstructure.Goal.GRABBED) {
+				superstructure.capper.setPosition(Superstructure.CAPPER_INIT_POSITION);
+			} else if (wantedCapLast) {
+				superstructure.capper.setPosition(Superstructure.CAPPER_DROP_POSITION);
+			}
+			
 			if (wantsIntake) {
 				superstructure.setGoal(Superstructure.Goal.INTAKING);
 			} else if (wantedIntakeLast) {
@@ -79,6 +88,7 @@ public final class TeleOpMode extends BaseTeleOpMode {
 			}
 		}
 
+
 		telemetry.addData("Extender Position", superstructure.extender.getCurrentPercent());
 		telemetry.addData("Extender Power", superstructure.extender.getOutput());
 		telemetry.addData("Requests", superstructure.getRequestSummary());
@@ -90,5 +100,6 @@ public final class TeleOpMode extends BaseTeleOpMode {
 		wantedStowLast = wantsStow;
 		wantedIntakeLast = wantsIntake;
 		wantedDropCubeLast = wantsDropCube;
+		wantedCapLast = wantsCap;
 	}
 }
