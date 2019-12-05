@@ -69,6 +69,7 @@ public class Extender implements Subsystem {
 		GRABBING(0.13),
 		STOPPED(0.3),
 		CLEARED(1.00),
+		SCORE_FAR(1.00),
 		SCORE_CLOSE(0.28);
 
 		public final double percent;

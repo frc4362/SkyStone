@@ -4,8 +4,8 @@ import com.gemsrobotics.ftc2020.Superstructure;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 
-@Autonomous(name="Long Auton")
-public class LongAuton extends LinearOpMode {
+@Autonomous(name="Bridge Park Auton")
+public class BridgeParkAuton extends LinearOpMode {
 	private Superstructure superstructure;
 
 	@Override

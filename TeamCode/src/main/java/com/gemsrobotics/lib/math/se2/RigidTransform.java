@@ -1,5 +1,6 @@
 package com.gemsrobotics.lib.math.se2;
 
+import com.acmerobotics.roadrunner.geometry.Pose2d;
 import com.gemsrobotics.lib.utils.MathUtils;
 import com.google.gson.annotations.SerializedName;
 
@@ -48,6 +49,10 @@ public class RigidTransform implements IRigidTransform2d<RigidTransform> {
 
     public static RigidTransform fromRotation(final Rotation rotation) {
         return new RigidTransform(new Translation(), rotation);
+    }
+
+    public static RigidTransform ofPose2d(final Pose2d pose) {
+        return new RigidTransform(pose.getX(), pose.getY(), Rotation.radians(pose.getHeading()));
     }
 
     /**

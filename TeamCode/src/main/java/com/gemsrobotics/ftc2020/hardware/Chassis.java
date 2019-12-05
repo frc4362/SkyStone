@@ -18,6 +18,7 @@ import com.acmerobotics.roadrunner.trajectory.constraints.MecanumConstraints;
 import com.gemsrobotics.ftc2020.Constants;
 import com.gemsrobotics.ftc2020.Subsystem;
 import com.gemsrobotics.lib.controls.PIDFController;
+import com.gemsrobotics.lib.math.se2.RigidTransform;
 import com.gemsrobotics.lib.math.se2.Rotation;
 import com.gemsrobotics.lib.math.se2.Translation;
 import com.qualcomm.hardware.bosch.BNO055IMU;
@@ -45,6 +46,10 @@ import static java.lang.Math.toDegrees;
 import static java.lang.Math.toRadians;
 
 public final class Chassis extends MecanumDrive implements Subsystem {
+	public static final double
+		kX = 1.6,
+		kY = 1.28;
+
 	private static final double
 			FAST_ROTATE_SCALAR = 0.7,
 			SLOW_ROTATE_SCALAR = 0.33,
@@ -112,7 +117,7 @@ public final class Chassis extends MecanumDrive implements Subsystem {
 		m_openLoopRotationController.setInputRange(-180.0, +180.0);
 
 		final com.acmerobotics.roadrunner.control.PIDCoefficients HEADING_PID =
-				new com.acmerobotics.roadrunner.control.PIDCoefficients(0.0, 0.0, 0.0);
+				new com.acmerobotics.roadrunner.control.PIDCoefficients(0.5, 0.0, 0.0);
 		m_turnController = new com.acmerobotics.roadrunner.control.PIDFController(HEADING_PID);
 		m_turnController.setInputBounds(0, Tau);
 
@@ -161,6 +166,10 @@ public final class Chassis extends MecanumDrive implements Subsystem {
 	@Override
 	public List<Double> getWheelPositions() {
 		return Arrays.asList(0.0, 0.0, 0.0, 0.0);
+	}
+
+	public RigidTransform getRigidTransformEstimate() {
+		return RigidTransform.ofPose2d(getPoseEstimate());
 	}
 
 	public TrajectoryBuilder getTrajectoryBuilder() {
@@ -425,6 +434,6 @@ public final class Chassis extends MecanumDrive implements Subsystem {
 	}
 
 	public boolean isBusy() {
-		return m_follower.isFollowing();
+		return m_follower.isFollowing() || m_mode == ControlMode.TURNING;
 	}
 }

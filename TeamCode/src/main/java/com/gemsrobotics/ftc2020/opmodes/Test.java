@@ -11,7 +11,6 @@ import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 
 import static com.gemsrobotics.lib.utils.MathUtils.Tau;
 
-@Autonomous
 public class Test extends LinearOpMode {
 	@Override
 	public void runOpMode() {

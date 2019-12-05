@@ -4,28 +4,19 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 
 import org.firstinspires.ftc.robotcore.external.ClassFactory;
 import org.firstinspires.ftc.robotcore.external.Telemetry;
-import org.firstinspires.ftc.robotcore.external.matrices.OpenGLMatrix;
-import org.firstinspires.ftc.robotcore.external.matrices.VectorF;
-import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
-import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
-import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
-import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
 import org.firstinspires.ftc.robotcore.external.navigation.VuforiaLocalizer;
-import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackable;
-import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackableDefaultListener;
-import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackables;
+import org.firstinspires.ftc.robotcore.external.tfod.Recognition;
+import org.firstinspires.ftc.robotcore.external.tfod.TFObjectDetector;
+
+import java.util.Collections;
+import java.util.List;
 
 public final class SkyStoneLocator {
-    private static float mmPerInch = 25.4f;
-
-    private static OpenGLMatrix ROBOT_FROM_CAMERA = OpenGLMatrix
-            .translation(7.875f * mmPerInch, 0, 9.0f * mmPerInch)
-            .multiplied(Orientation.getRotationMatrix(AxesReference.EXTRINSIC, AxesOrder.YZX, AngleUnit.DEGREES, -90, 0, 0));
-
     private final Telemetry m_telemetry;
     private final VuforiaLocalizer m_vuforia;
-    private final VuforiaTrackables m_targets;
-    private final VuforiaTrackable m_stoneTarget;
+    private final TFObjectDetector m_tf;
+
+    private List<Recognition> m_recognitions;
 
     public SkyStoneLocator(final HardwareMap hardwareMap, final Telemetry telemetry) {
         m_telemetry = telemetry;
@@ -39,53 +30,69 @@ public final class SkyStoneLocator {
         parameters.cameraDirection = VuforiaLocalizer.CameraDirection.BACK;
 
         m_vuforia = ClassFactory.getInstance().createVuforia(parameters);
-        m_targets = m_vuforia.loadTrackablesFromAsset("Skystone");
-        m_stoneTarget = m_targets.get(0);
-        m_stoneTarget.setName("Stone Target");
-        m_stoneTarget.setLocation(OpenGLMatrix
-                .translation(0, 0, 2.00f * mmPerInch)
-                .multiplied(Orientation.getRotationMatrix(AxesReference.EXTRINSIC, AxesOrder.XYZ, AngleUnit.DEGREES, 90, 0, -90)));
 
-        ((VuforiaTrackableDefaultListener) m_stoneTarget.getListener()).setPhoneInformation(ROBOT_FROM_CAMERA, parameters.cameraDirection);
+        int tfodMonitorViewId = hardwareMap.appContext
+                .getResources()
+                .getIdentifier("tfodMonitorViewId", "id", hardwareMap.appContext.getPackageName());
+
+        TFObjectDetector.Parameters tfodParameters = new TFObjectDetector.Parameters(tfodMonitorViewId);
+        tfodParameters.minimumConfidence = 0.8;
+
+        m_tf = ClassFactory.getInstance().createTFObjectDetector(tfodParameters, m_vuforia);
+        m_tf.loadModelFromAsset("Skystone.tflite", "Stone", "Skystone");
+
+        m_recognitions = Collections.emptyList();
     }
 
     public enum Location {
-        NONE, FIRST, SECOND, THIRD
-    }
+        UNKNOWN,
+        WALL,
+        CENTER,
+        BRIDGE;
 
-    public void start() {
-        m_targets.activate();
-    }
+        public static Location classifyTarget(final Recognition target) {
+            final double leftEdge = target.getLeft();
 
-    public void stop() {
-        m_targets.deactivate();
-    }
+            if (leftEdge <= 150) {
+                return WALL;
+            } else if (leftEdge > 150 && leftEdge <= 630) {
+                return CENTER;
+            } else if (leftEdge > 630) {
+                return BRIDGE;
+            }
 
-    public void update() {
-        final VuforiaTrackableDefaultListener trackable = ((VuforiaTrackableDefaultListener) m_stoneTarget.getListener());
-        final boolean isVisible = trackable.isVisible();
-
-        m_telemetry.addData("Target Visible?", isVisible);
-
-        if (isVisible) {
-            final OpenGLMatrix location = trackable.getUpdatedRobotLocation();
-            final VectorF translation = location.getTranslation();
-            m_telemetry.addData("Target Position", "[%.1f, %.1f, %.1f]",
-                    translation.get(0) / mmPerInch,
-                    translation.get(1) / mmPerInch,
-                    translation.get(2) / mmPerInch);
-            Orientation rotation = Orientation.getOrientation(location, AxesReference.EXTRINSIC, AxesOrder.XYZ, AngleUnit.DEGREES);
-            m_telemetry.addData("Target Orientation", "[%.1f, %.1f, %.1f]",
-                    rotation.firstAngle,
-                    rotation.secondAngle,
-                    rotation.thirdAngle);
-        } else {
-            m_telemetry.addData("Target Position", "None");
-            m_telemetry.addData("Target Orientation", "None");
+            return UNKNOWN;
         }
     }
 
-//    public Location getObservedSkyStoneLocation() {
-//        final RelicRecoveryVuMark
-//    }
+    public void start() {
+        if (m_tf != null) {
+            m_tf.activate();
+        }
+
+        m_telemetry.addLine("Tensorflow initialized");
+        m_telemetry.update();
+    }
+
+    public void stop() {
+        if (m_tf != null) {
+            m_tf.shutdown();
+        }
+    }
+
+    public void update() {
+        if (m_tf != null) {
+            final List<Recognition> recognitions = m_tf.getRecognitions();
+            m_recognitions = recognitions != null ? recognitions : Collections.<Recognition>emptyList();
+        }
+    }
+
+    public Location getObservedSkyStoneLocation(final RecognitionComparator strategy) {
+        if (m_recognitions.size() == 0) {
+            return Location.UNKNOWN;
+        }
+
+        Collections.sort(m_recognitions, strategy);
+        return Location.classifyTarget(m_recognitions.get(0));
+    }
 }

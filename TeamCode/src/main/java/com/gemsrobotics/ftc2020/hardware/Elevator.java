@@ -12,12 +12,12 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 import static com.gemsrobotics.lib.utils.MathUtils.epsilonEquals;
 
 public class Elevator implements Subsystem {
-	private static final int HEIGHT = 5900;
-	private static final int MOVABLE_HEIGHT = 5750;
+	private static final int HEIGHT = 6000;
+	private static final int MOVABLE_HEIGHT = 6000;
 	private static final double GRAVITY_FEEDFORWARD = 0.1;
 	private static final double TICKS_TO_INCHES = 204.8611;
 	private static final double PERCENT_PER_INCH = TICKS_TO_INCHES / HEIGHT;
-	private static final double PERCENT_PER_CUBE_INCREMENT = 4.0 * PERCENT_PER_INCH;
+	private static final double PERCENT_PER_CUBE_INCREMENT = 4.2 * PERCENT_PER_INCH;
 	private static final PIDFController.Gains GAINS = new PIDFController.Gains(
 			0.004,
 			0.0, // 0.004
@@ -25,7 +25,7 @@ public class Elevator implements Subsystem {
 			0.0
 	);
 
-	private static final MathUtils.Bounds SCRUBBING_RANGE = new MathUtils.Bounds(0.1, 0.93);
+	private static final MathUtils.Bounds SCRUBBING_RANGE = new MathUtils.Bounds(0.02, 0.93);
 
 	protected final DcMotorEx m_motor;
 	protected final PIDFController m_controller;

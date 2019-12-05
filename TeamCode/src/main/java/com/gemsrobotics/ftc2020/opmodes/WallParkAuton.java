@@ -4,8 +4,8 @@ import com.gemsrobotics.ftc2020.Superstructure;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 
-@Autonomous(name="First Auton")
-public class FirstAuton extends LinearOpMode {
+@Autonomous(name="Wall Park Auton")
+public class WallParkAuton extends LinearOpMode {
 	private Superstructure superstructure;
 
 	@Override
@@ -20,7 +20,7 @@ public class FirstAuton extends LinearOpMode {
 		waitForStart();
 
 		final long endtime = System.currentTimeMillis() + 750;
-		superstructure.chassis.setOpenLoopCurvature(-0.6, 0.0, false);
+		superstructure.chassis.setOpenLoopCurvature(0.6, 0.0, false);
 
 //		superstructure.chassis.setTrajectoryGoal(trajectory);
 

@@ -2,12 +2,14 @@ package com.gemsrobotics.ftc2020;
 
 import android.text.TextUtils;
 
+import com.acmerobotics.roadrunner.trajectory.TrajectoryBuilder;
 import com.gemsrobotics.ftc2020.hardware.Draggers;
 import com.gemsrobotics.ftc2020.hardware.Elevator;
 import com.gemsrobotics.ftc2020.hardware.Extender;
 import com.gemsrobotics.ftc2020.hardware.Intake;
 import com.gemsrobotics.ftc2020.hardware.Inventory;
 import com.gemsrobotics.ftc2020.hardware.Chassis;
+import com.gemsrobotics.lib.math.se2.Rotation;
 import com.gemsrobotics.lib.utils.MathUtils;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.Servo;
@@ -22,6 +24,7 @@ import java.util.List;
 import java.util.Queue;
 
 import static com.gemsrobotics.lib.utils.MathUtils.epsilonEquals;
+import static java.lang.StrictMath.abs;
 
 public class Superstructure {
 	public static final double
@@ -100,7 +103,7 @@ public class Superstructure {
 		GRABBED
 	}
 
-	private void request(final Request request) {
+	public void request(final Request request) {
 		m_requests.add(request);
 	}
 
@@ -148,6 +151,14 @@ public class Superstructure {
 		request(new GrabRequest());
 	}
 
+	public void requestDrive(final double distance) {
+		request(new DriveRequest(distance));
+	}
+
+	public void requestTurn(final Rotation turn) {
+		request(new TurnRequest(turn.getRadians()));
+	}
+
 	private void handleGoalTransition(final Goal newGoal) {
 		switch (newGoal) {
 			case STOWED:
@@ -164,7 +175,7 @@ public class Superstructure {
 				request(new IntakingRequest());
 				break;
 			case OUTTAKING:
-				request(new StowRequest(true));
+//				request(new StowRequest(true));
 				request(new OuttakingRequest());
 				break;
 			case PARKING:
@@ -192,8 +203,59 @@ public class Superstructure {
 		return ret.toString();
 	}
 
+	public class DriveRequest extends Request {
+		private boolean m_hasInitd;
+		private double m_distance;
+
+		private DriveRequest(final double distance) {
+			m_hasInitd = false;
+			m_distance = distance * Chassis.kX;
+		}
+
+		@Override
+		public boolean execute() {
+			if (!m_hasInitd) {
+				final TrajectoryBuilder builder = chassis.getTrajectoryBuilder();
+
+				if (m_distance < 0.0) {
+					builder.reverse();
+				}
+
+				builder.forward(abs(m_distance));
+
+				chassis.setTrajectoryGoal(builder.build());
+				m_hasInitd = true;
+				return false;
+			}
+
+			return !chassis.isBusy();
+		}
+	}
+
+	private class TurnRequest extends Request {
+		private boolean m_hasInitd;
+		private double m_radians;
+
+		public TurnRequest(final double radians) {
+			m_hasInitd = false;
+			m_radians = radians;
+		}
+
+		@Override
+		public boolean execute() {
+			if (!m_hasInitd) {
+				chassis.setTurnGoal(m_radians);
+				m_hasInitd = true;
+				return false;
+			}
+
+			return !chassis.isBusy();
+		}
+	}
+
 	private class StowRequest extends Request {
 		private boolean moveExtender;
+		private long elevatorTime = Long.MAX_VALUE;
 
 		public StowRequest(final boolean moveExtender) {
 			this.moveExtender = moveExtender;
@@ -207,14 +269,20 @@ public class Superstructure {
 			parker.setPosition(PARKER_RETRACTED_POSITION);
 			flipper.setPosition(FLIPPER_UPRIGHT_POSITION);
 
-			if (elevator.getCurrentPercent() > 0.03) {
+			if (elevator.getCurrentPercent() > 0.05) {
 				elevator.setPositionGoal(0.0);
 				return false;
 			}
+			if (elevatorTime == Long.MAX_VALUE) {
+				elevatorTime = System.currentTimeMillis() + 1000;
+			}
 
+			if (System.currentTimeMillis() < elevatorTime) {
+				return false;
+			}
 			passthrough.setPosition(PASSTHROUGH_FORWARD_POSITION);
 
-			if (extender.getCurrentPercent() > 0.05 && moveExtender) {
+			if (extender.getCurrentPercent() > 0.1 && moveExtender) {
 				extender.setPositionGoal(Extender.Position.STOWED);
 				return false;
 			}
@@ -230,7 +298,6 @@ public class Superstructure {
 		public boolean execute() {
 			intake.setGoal(Intake.Goal.NEUTRAL);
 			draggers.setGoal(Draggers.Goal.EXTENDED);
-			passthrough.setPosition(PASSTHROUGH_FORWARD_POSITION);
 			parker.setPosition(PARKER_RETRACTED_POSITION);
 			flipper.setPosition(FLIPPER_UPRIGHT_POSITION);
 
@@ -242,6 +309,7 @@ public class Superstructure {
 	private class ScorePositionRequest extends Request {
 		private boolean hasCleared = false;
 		private long backupTime = Long.MAX_VALUE;
+		private long clearTime = Long.MAX_VALUE;
 
 		@Override
 		public boolean execute() {
@@ -250,7 +318,7 @@ public class Superstructure {
 			parker.setPosition(PARKER_RETRACTED_POSITION);
 			flipper.setPosition(FLIPPER_UPRIGHT_POSITION);
 
-			if (extender.getCurrentPercent() < 0.97 && !hasCleared) {
+			if (extender.getCurrentPercent() < 0.95 && !hasCleared) {
 				extender.setPositionGoal(Extender.Position.CLEARED);
 				return false;
 			}
@@ -258,15 +326,20 @@ public class Superstructure {
 			hasCleared = true;
 
 			if (backupTime == Long.MAX_VALUE) {
-				backupTime = System.currentTimeMillis() + 500;
+				backupTime = System.currentTimeMillis() + 250;
 			}
 
 			if (System.currentTimeMillis() < backupTime) {
+				return false;
+			}
+			if (clearTime == Long.MAX_VALUE) {
+				clearTime = System.currentTimeMillis() + 500;
+			}
+			if (System.currentTimeMillis() < clearTime) {
 				passthrough.setPosition(PASSTHROUGH_REVERSE_POSITION);
 				flipper.setPosition(FLIPPER_UPRIGHT_POSITION);
 				return false;
 			}
-
 			if (extender.getCurrentPercent() > 0.55) {
 				extender.setPositionGoal(Extender.Position.SCORE_CLOSE);
 				return false;
@@ -285,7 +358,7 @@ public class Superstructure {
 		public boolean execute() {
 			draggers.setGoal(Draggers.Goal.RETRACTED);
 			passthrough.setPosition(PASSTHROUGH_FORWARD_POSITION);
-			gripper.setPosition(GRIPPER_OPEN_POSITION);
+			gripper.setPosition(GRIPPER_CLOSED_POSITION);
 			parker.setPosition(PARKER_RETRACTED_POSITION);
 
 			//TODO
@@ -294,22 +367,26 @@ public class Superstructure {
 //			} else if (inventory.isCubeTiltedRight()) {
 //				flipper.setPosition(FLIPPER_RIGHT_POSITION);
 //			} else {
-				flipper.setPosition(FLIPPER_UPRIGHT_POSITION);
+//				flipper.setPosition(FLIPPER_UPRIGHT_POSITION);
 //			}
 
-			if (twistTime == Long.MAX_VALUE) {
-				twistTime = System.currentTimeMillis() + 150;
-			}
+//			if (twistTime == Long.MAX_VALUE) {
+//				twistTime = System.currentTimeMillis() + 150;
+//			}
+//
+//			if (twistTime > System.currentTimeMillis()) {
+//				return false;
+//			}
+//
+//			if (extender.getCurrentPercent() > 0.25) {
+//				extender.setPositionGoal(Extender.Position.GRABBING);
+//				return false;
+//			}
 
-			if (twistTime > System.currentTimeMillis()) {
-				return false;
-			}
+			gripper.setPosition(GRIPPER_CLOSED_POSITION);
+			intake.setGoal(Intake.Goal.NEUTRAL);
 
-			if (extender.getCurrentPercent() > 0.25) {
-				extender.setPositionGoal(Extender.Position.GRABBING);
-				return false;
-			}
-
+			m_state = Goal.GRABBED;
 			if (closeTime == Long.MAX_VALUE) {
 				closeTime = System.currentTimeMillis() + 200;
 			}
@@ -317,9 +394,6 @@ public class Superstructure {
 			if (closeTime > System.currentTimeMillis()) {
 				return false;
 			}
-
-			gripper.setPosition(GRIPPER_CLOSED_POSITION);
-			m_state = Goal.GRABBED;
 			return true;
 		}
 	}
@@ -329,8 +403,8 @@ public class Superstructure {
 		public boolean execute() {
 			draggers.setGoal(Draggers.Goal.RETRACTED);
 			passthrough.setPosition(PASSTHROUGH_FORWARD_POSITION);
-			gripper.setPosition(GRIPPER_CLOSED_POSITION);
-//			gripper.setPosition(GRIPPER_OPEN_POSITION);
+//			gripper.setPosition(GRIPPER_CLOSED_POSITION);
+			gripper.setPosition(GRIPPER_OPEN_POSITION);
 			parker.setPosition(PARKER_RETRACTED_POSITION);
 
 			if (elevator.getCurrentPercent() > 0.03) {
@@ -338,18 +412,18 @@ public class Superstructure {
 				return false;
 			}
 
-			extender.setPositionGoal(Extender.Position.STOPPED);
-//			extender.setPositionGoal(Extender.Position.GRABBING);
+//			extender.setPositionGoal(Extender.Position.STOPPED);
+			extender.setPositionGoal(Extender.Position.GRABBING);
 
-			final double currentExtenderPercent = extender.getCurrentPercent();
+//			final double currentExtenderPercent = extender.getCurrentPercent();
+//
+//			if (epsilonEquals(currentExtenderPercent, Extender.Position.STOPPED.percent, 0.05)) {
+//				extender.setPositionGoal(Extender.Position.STOPPED);
+//				return false;
+//			}
 
-			if (epsilonEquals(currentExtenderPercent, Extender.Position.STOPPED.percent, 0.05)) {
-				extender.setPositionGoal(Extender.Position.STOPPED);
-				return false;
-			}
-
-			flipper.setPosition(FLIPPER_STOP_POSITION);
-//			flipper.setPosition(FLIPPER_UPRIGHT_POSITION);
+//			flipper.setPosition(FLIPPER_STOP_POSITION);
+			flipper.setPosition(FLIPPER_UPRIGHT_POSITION);
 			intake.setGoal(Intake.Goal.INTAKING);
 
 			m_state = Goal.INTAKING;
@@ -372,10 +446,10 @@ public class Superstructure {
 
 			extender.setPositionGoal(Extender.Position.STOWED);
 
-			if (extender.getCurrentPercent() > 0.5) {
-				extender.setPositionGoal(Extender.Position.STOWED);
-				return false;
-			}
+//			if (extender.getCurrentPercent() > 0.5) {
+//				extender.setPositionGoal(Extender.Position.STOWED);
+//				return false;
+//			}
 
 			intake.setGoal(Intake.Goal.OUTTAKING);
 
