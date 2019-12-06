@@ -12,6 +12,8 @@ public class TurnTestMode extends LinearOpMode {
 	public void runOpMode() throws InterruptedException {
 		final Chassis chassis = new Chassis(hardwareMap);
 
+		waitForStart();
+
 		chassis.setTurnGoal(Tau / 4);
 
 		while (!isStopRequested()) {

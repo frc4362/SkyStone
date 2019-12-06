@@ -343,7 +343,7 @@ public final class Chassis extends MecanumDrive implements Subsystem {
 	}
 
 	public void setTurnGoal(final double angle) {
-		double heading = getPoseEstimate().getHeading();
+		final double heading = getPoseEstimate().getHeading();
 		m_turnProfile = MotionProfileGenerator.generateSimpleMotionProfile(
 				new MotionState(heading, 0, 0, 0),
 				new MotionState(heading + angle, 0, 0, 0),

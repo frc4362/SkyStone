@@ -23,8 +23,8 @@ public class Constants {
 			kA = 0.00066;
 
 	public static DriveConstraints TRACKING_CONSTRAINTS = new DriveConstraints(
-			30.0,
-			40.0,
+			45.0,
+			45.0,
 			0.0,
 			Math.toRadians(180.0),
 			Math.toRadians(180.0),

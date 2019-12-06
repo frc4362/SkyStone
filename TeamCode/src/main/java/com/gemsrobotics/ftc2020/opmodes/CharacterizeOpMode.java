@@ -84,6 +84,7 @@ public class CharacterizeOpMode extends LinearOpMode {
 			if (elapsedTime > rampTime) {
 				break;
 			}
+
 			double vel = accel * elapsedTime;
 			double power = vel / maxVel;
 
@@ -92,6 +93,7 @@ public class CharacterizeOpMode extends LinearOpMode {
 			drive.setDrivePower(new Pose2d(power, 0.0, 0.0));
 			drive.updatePoseEstimate();
 		}
+
 		drive.setDrivePower(new Pose2d(0.0, 0.0, 0.0));
 
 		RampRegression.RampResult rampResult = rampRegression.fit(fitIntercept);

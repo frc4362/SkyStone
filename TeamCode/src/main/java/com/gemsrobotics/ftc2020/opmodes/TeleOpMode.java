@@ -1,6 +1,7 @@
 package com.gemsrobotics.ftc2020.opmodes;
 
 import com.gemsrobotics.ftc2020.Superstructure;
+import com.gemsrobotics.ftc2020.hardware.Draggers;
 import com.gemsrobotics.ftc2020.hardware.Extender;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
@@ -70,14 +71,12 @@ public final class TeleOpMode extends BaseTeleOpMode {
 				superstructure.gripper.setPosition(Superstructure.GRIPPER_CLOSED_POSITION);
 			} else if (wantedDropCubeLast) {
 				superstructure.gripper.setPosition(Superstructure.GRIPPER_OPEN_POSITION);
-			} else if (gamepad2.dpad_left) {
-				superstructure.setGoal(Superstructure.Goal.DRAGGING);
 			}
 
 			if (wantsCloseGripper) {
 				superstructure.gripper.setPosition(Superstructure.GRIPPER_CLOSED_POSITION);
 			}
-		} else if (!superstructure.isBusy() && superstructure.getState()== Superstructure.Goal.GRABBED){
+		} else if (!superstructure.isBusy() && superstructure.getState() == Superstructure.Goal.GRABBED){
 //			if (wantsCap && !wantedCapLast) {
 //				superstructure.capper.setPosition(Superstructure.CAPPER_INIT_POSITION);
 			if (gamepad2.back) {
@@ -90,11 +89,8 @@ public final class TeleOpMode extends BaseTeleOpMode {
 				superstructure.setGoal(Superstructure.Goal.OUTTAKING);
 			} else if (gamepad2.x) {
 				superstructure.setGoal(Superstructure.Goal.SCORING);
-			} else if (gamepad2.dpad_left) {
-				superstructure.setGoal(Superstructure.Goal.DRAGGING);
 			}
-		} else if (!superstructure.isBusy() && superstructure.getState() != Superstructure.Goal.PARKING
-				&& superstructure.getState()!= Superstructure.Goal.GRABBED) {
+		} else if (!superstructure.isBusy() && superstructure.getState() != Superstructure.Goal.PARKING) {
 			if (wantsIntake) {
 				superstructure.setGoal(Superstructure.Goal.INTAKING);
 			} else if (wantedIntakeLast) {
@@ -103,8 +99,6 @@ public final class TeleOpMode extends BaseTeleOpMode {
 				superstructure.setGoal(Superstructure.Goal.OUTTAKING);
 			} else if (gamepad2.x) {
 				superstructure.setGoal(Superstructure.Goal.SCORING);
-			} else if (gamepad2.dpad_left) {
-				superstructure.setGoal(Superstructure.Goal.DRAGGING);
 			} else if (gamepad2.dpad_up) {
 				superstructure.setGoal(Superstructure.Goal.PARKING);
 			} else if (wantsCloseGripper) {
@@ -112,6 +106,12 @@ public final class TeleOpMode extends BaseTeleOpMode {
 			} else {
 				superstructure.setGoal(Superstructure.Goal.STOWED);
 			}
+		}
+
+		if (gamepad2.dpad_left) {
+			superstructure.draggers.setGoal(Draggers.Goal.EXTENDED);
+		} else {
+			superstructure.draggers.setGoal(Draggers.Goal.RETRACTED);
 		}
 
 		telemetry.addData("Extender Position", superstructure.extender.getCurrentPercent());

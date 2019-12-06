@@ -10,7 +10,6 @@ import com.gemsrobotics.ftc2020.hardware.Intake;
 import com.gemsrobotics.ftc2020.hardware.Inventory;
 import com.gemsrobotics.ftc2020.hardware.Chassis;
 import com.gemsrobotics.lib.math.se2.Rotation;
-import com.gemsrobotics.lib.utils.MathUtils;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.Servo;
 
@@ -95,7 +94,7 @@ public class Superstructure {
 
 	public enum Goal {
 		STOWED,
-		DRAGGING,
+//		DRAGGING,
 		INTAKING,
 		SCORING,
 		OUTTAKING,
@@ -152,7 +151,7 @@ public class Superstructure {
 	}
 
 	public void requestDrive(final double distance) {
-		request(new DriveRequest(distance));
+		request(new DriveStraightRequest(distance));
 	}
 
 	public void requestTurn(final Rotation turn) {
@@ -164,10 +163,10 @@ public class Superstructure {
 			case STOWED:
 				request(new StowRequest(m_state != Goal.GRABBED));
 				break;
-			case DRAGGING:
-				request(new StowRequest(true));
-				request(new DragRequest());
-				break;
+//			case DRAGGING:
+//				request(new StowRequest(true));
+//				request(new DragRequest());
+//				break;
 			case SCORING:
 				request(new ScorePositionRequest());
 				break;
@@ -203,11 +202,11 @@ public class Superstructure {
 		return ret.toString();
 	}
 
-	public class DriveRequest extends Request {
+	public class DriveStraightRequest extends Request {
 		private boolean m_hasInitd;
 		private double m_distance;
 
-		private DriveRequest(final double distance) {
+		private DriveStraightRequest(final double distance) {
 			m_hasInitd = false;
 			m_distance = distance * Chassis.kX;
 		}
@@ -218,10 +217,10 @@ public class Superstructure {
 				final TrajectoryBuilder builder = chassis.getTrajectoryBuilder();
 
 				if (m_distance < 0.0) {
-					builder.reverse();
+					builder.back(abs(m_distance));
+				} else {
+					builder.forward(abs(m_distance));
 				}
-
-				builder.forward(abs(m_distance));
 
 				chassis.setTrajectoryGoal(builder.build());
 				m_hasInitd = true;
@@ -264,7 +263,6 @@ public class Superstructure {
 		@Override
 		public boolean execute() {
 			intake.setGoal(Intake.Goal.NEUTRAL);
-			draggers.setGoal(Draggers.Goal.RETRACTED);
 			gripper.setPosition(GRIPPER_OPEN_POSITION);
 			parker.setPosition(PARKER_RETRACTED_POSITION);
 			flipper.setPosition(FLIPPER_UPRIGHT_POSITION);
@@ -293,18 +291,18 @@ public class Superstructure {
 		}
 	}
 
-	private class DragRequest extends Request {
-		@Override
-		public boolean execute() {
-			intake.setGoal(Intake.Goal.NEUTRAL);
-			draggers.setGoal(Draggers.Goal.EXTENDED);
-			parker.setPosition(PARKER_RETRACTED_POSITION);
-			flipper.setPosition(FLIPPER_UPRIGHT_POSITION);
-
-			m_state = Goal.DRAGGING;
-			return true;
-		}
-	}
+//	private class DragRequest extends Request {
+//		@Override
+//		public boolean execute() {
+//			intake.setGoal(Intake.Goal.NEUTRAL);
+//			draggers.setGoal(Draggers.Goal.EXTENDED);
+//			parker.setPosition(PARKER_RETRACTED_POSITION);
+//			flipper.setPosition(FLIPPER_UPRIGHT_POSITION);
+//
+//			m_state = Goal.DRAGGING;
+//			return true;
+//		}
+//	}
 
 	private class ScorePositionRequest extends Request {
 		private boolean hasCleared = false;
@@ -313,7 +311,6 @@ public class Superstructure {
 
 		@Override
 		public boolean execute() {
-			draggers.setGoal(Draggers.Goal.RETRACTED);
 			intake.setGoal(Intake.Goal.NEUTRAL);
 			parker.setPosition(PARKER_RETRACTED_POSITION);
 			flipper.setPosition(FLIPPER_UPRIGHT_POSITION);
@@ -356,7 +353,6 @@ public class Superstructure {
 
 		@Override
 		public boolean execute() {
-			draggers.setGoal(Draggers.Goal.RETRACTED);
 			passthrough.setPosition(PASSTHROUGH_FORWARD_POSITION);
 			gripper.setPosition(GRIPPER_CLOSED_POSITION);
 			parker.setPosition(PARKER_RETRACTED_POSITION);
@@ -401,7 +397,6 @@ public class Superstructure {
 	private class IntakingRequest extends Request {
 		@Override
 		public boolean execute() {
-			draggers.setGoal(Draggers.Goal.RETRACTED);
 			passthrough.setPosition(PASSTHROUGH_FORWARD_POSITION);
 //			gripper.setPosition(GRIPPER_CLOSED_POSITION);
 			gripper.setPosition(GRIPPER_OPEN_POSITION);
@@ -434,7 +429,6 @@ public class Superstructure {
 	private class OuttakingRequest extends Request {
 		@Override
 		public boolean execute() {
-			draggers.setGoal(Draggers.Goal.RETRACTED);
 			passthrough.setPosition(PASSTHROUGH_FORWARD_POSITION);
 			gripper.setPosition(GRIPPER_OPEN_POSITION);
 			parker.setPosition(PARKER_RETRACTED_POSITION);
